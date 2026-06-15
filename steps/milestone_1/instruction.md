@@ -128,13 +128,17 @@ For every frame in a cluster of size ≥ 2:
 
 - If **any** frame in the whole cluster is intrinsically quarantined, every frame
   in that cluster casts a **quarantine** vote with reason `DUP_TAINT`.
-- Otherwise (cluster has no intrinsic quarantine), every frame in the cluster casts
-  a **review** vote with reason `DUP_REVIEW`.
+- Otherwise the cluster is *clean*: exactly one member — the **representative**,
+  defined as the frame with the highest `calibrated_score` (ties broken by the
+  smallest `frame_id`) — keeps its base decision and casts **no** duplicate vote;
+  every **other** member casts a **review** vote with reason `DUP_REVIEW`.
 
 A frame not in any cluster of size ≥ 2 casts no duplicate vote.
 
 > The quarantine taint must reach the entire connected component, not just directly
-> linked neighbours. Pairwise-only logic is incorrect.
+> linked neighbours. Pairwise-only logic is incorrect. In a clean cluster only the
+> single highest-calibrated representative may keep a `promote`; its near-duplicates
+> cannot.
 
 ### Rule D — holdout taint (cross-frame, by patient group)
 
@@ -151,6 +155,21 @@ Within a patient group (frames sharing `patient_id`):
 > A holdout frame downgrades its *siblings*, not only itself. Per-frame logic that
 > ignores siblings is incorrect.
 
+### Rule E — holdout taint through duplicates (cross-frame)
+
+Independently of Rule C's quarantine taint, a duplicate cluster (size ≥ 2) is
+**holdout-exposed** if **any** of its members has `holdout = true`. Every member of
+a holdout-exposed cluster casts a vote:
+
+- if its own `quality_flag` is not `ok` → a **quarantine** vote with reason
+  `HOLDOUT_DUP_FLAGGED`;
+- otherwise → a **review** vote with reason `HOLDOUT_DUP`.
+
+> This couples duplicate clustering with holdout state: a frame can be downgraded
+> because a *duplicate of it* (possibly from a different patient) is a holdout frame
+> — even when the frame's own patient group contains no holdout. Holdout logic that
+> only looks within a patient group is incorrect.
+
 ### Precedence and reason selection
 
 `decision` = the most restrictive level among all votes a frame cast
@@ -161,22 +180,23 @@ so every frame has at least one vote.
 reason that comes **first** in this priority list:
 
 ```
-QUALITY_BLUR, QUALITY_GLARE, CALIBRATED_FAIL, HOLDOUT_FLAGGED, DUP_TAINT,
-HOLDOUT, HOLDOUT_SIBLING, DUP_REVIEW, LOW_CALIBRATED, CALIBRATED_OK
+QUALITY_BLUR, QUALITY_GLARE, CALIBRATED_FAIL, HOLDOUT_FLAGGED,
+HOLDOUT_DUP_FLAGGED, DUP_TAINT, HOLDOUT, HOLDOUT_SIBLING, HOLDOUT_DUP,
+DUP_REVIEW, LOW_CALIBRATED, CALIBRATED_OK
 ```
 
 > ⚠️ **Use these exact string literals — verbatim, do not rename, paraphrase, or
 > re-case them.** The verifier compares strings exactly.
 >
 > - `decision` is exactly one of: `promote`, `review`, `quarantine` (lowercase).
-> - `reason_code` is exactly one of the ten codes above (UPPER_SNAKE_CASE).
+> - `reason_code` is exactly one of the twelve codes above (UPPER_SNAKE_CASE).
 >   `QUALITY_<FLAG>` is the literal flag upper-cased — `blur` → `QUALITY_BLUR`,
 >   `glare` → `QUALITY_GLARE` (no other quality flags produce a quality vote).
 >
 > The complete, closed set of valid `reason_code` values is:
 > `CALIBRATED_OK`, `LOW_CALIBRATED`, `CALIBRATED_FAIL`, `QUALITY_BLUR`,
 > `QUALITY_GLARE`, `DUP_TAINT`, `DUP_REVIEW`, `HOLDOUT`, `HOLDOUT_SIBLING`,
-> `HOLDOUT_FLAGGED`. No other strings are accepted.
+> `HOLDOUT_FLAGGED`, `HOLDOUT_DUP`, `HOLDOUT_DUP_FLAGGED`. No other strings are accepted.
 
 ---
 

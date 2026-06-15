@@ -15,35 +15,50 @@ import random
 import subprocess
 import sys
 
-def _block(lo):
-    """8 set bits starting at bit `lo` (popcount 8). Disjoint blocks are
-    pairwise Hamming distance 16 — well isolated for the dup closure."""
+def bits(*positions):
+    """A hash with exactly the given bit positions set (low popcount)."""
     v = 0
-    for b in range(lo, lo + 8):
+    for b in positions:
         v |= 1 << b
     return v
 
 
-# Fixed trap frames — always present, values hand-chosen to exercise the §3
+# Fixed trap frames — always present, values hand-chosen to exercise the
 # cross-frame traps. Columns: frame_id, patient, raw, bin, quality, holdout, hash
-# Isolated frames use disjoint high-bit blocks (>= bit 8); the dup chain uses
-# small low-bit values, so no isolated frame links to another or to the chain.
+#
+# Hash layout: each independent group occupies its own 5-bit "lane" (lanes start
+# at bits 9, 16, 23, ... and are >= 7 apart). Frames within a duplicate cluster
+# share a lane and differ by <= dup_hamming_max(=5); frames in different lanes
+# differ by >= 6, so no cross-lane links form. The transitive dup chain lives in
+# the low byte (bits 0-7) where A and C are 7 apart (only linked via B). Every
+# trap hash has popcount <= 4, so random frames (popcount >= 24) never link to a
+# trap. gen-time assertion below enforces the intended cluster structure.
 TRAP_FRAMES = [
     # raw-vs-calibrated: high raw confidence, but calibration bin 0 -> fails.
-    ("T_RVC", "P_RVC", 0.95, 0, "ok", False, _block(8)),
+    ("T_RVC", "P_RVC", 0.95, 0, "ok", False, bits(9, 10, 11)),
     # transitive dup chain A~B~C: ham(A,B)=3, ham(B,C)=4, ham(A,C)=7 (> max 5).
     # A is intrinsically quarantined (blur); taint must reach C transitively.
-    ("T_DUPA", "P_DUPA", 0.90, 4, "blur", False, 0),
-    ("T_DUPB", "P_DUPB", 0.90, 4, "ok", False, 7),
-    ("T_DUPC", "P_DUPC", 0.90, 4, "ok", False, 247),
+    # All popcounts >= 3 so the chain stays isolated from the other lanes.
+    ("T_DUPA", "P_DUPA", 0.90, 4, "blur", False, bits(1, 2, 3, 5, 6, 7)),
+    ("T_DUPB", "P_DUPB", 0.90, 4, "ok", False, bits(1, 2, 3)),
+    ("T_DUPC", "P_DUPC", 0.90, 4, "ok", False, bits(0, 3, 4)),
     # holdout sibling: P_HS group has a holdout frame; clean sibling downgraded.
-    ("T_HSH", "P_HS", 0.90, 4, "ok", True, _block(16)),
-    ("T_HSS", "P_HS", 0.90, 4, "ok", False, _block(24)),
+    ("T_HSH", "P_HS", 0.90, 4, "ok", True, bits(16, 17, 18)),
+    ("T_HSS", "P_HS", 0.90, 4, "ok", False, bits(23, 24, 25)),
     # precedence: holdout group + soft-flagged ('dark') sibling -> quarantine.
-    ("T_PRH", "P_PR", 0.90, 4, "ok", True, _block(32)),
-    ("T_PRS", "P_PR", 0.90, 4, "dark", False, _block(40)),
+    ("T_PRH", "P_PR", 0.90, 4, "ok", True, bits(30, 31, 32)),
+    ("T_PRS", "P_PR", 0.90, 4, "dark", False, bits(37, 38, 39)),
     # a clean promote so the happy path is exercised.
-    ("T_OK", "P_OK", 0.90, 4, "ok", False, _block(48)),
+    ("T_OK", "P_OK", 0.90, 4, "ok", False, bits(44, 45, 46)),
+    # coupled holdout-through-duplicate (Rule F): T_HDB is a clean frame in a
+    # holdout-free patient, but its duplicate T_HDA is holdout -> T_HDB downgraded.
+    ("T_HDA", "P_HDA", 0.90, 4, "ok", True, bits(51, 52, 53)),
+    ("T_HDB", "P_HDB", 0.90, 4, "ok", False, bits(51, 52, 53, 54)),
+    # cluster representative (Rule E): untainted clique; only the highest-
+    # calibrated member (T_REPA, bin 4) keeps promote, the rest -> review.
+    ("T_REPA", "P_REPA", 0.90, 4, "ok", False, bits(58, 59, 60)),
+    ("T_REPB", "P_REPB", 0.90, 3, "ok", False, bits(58, 59, 60, 61)),
+    ("T_REPC", "P_REPC", 0.90, 2, "ok", False, bits(58, 59, 61)),
 ]
 
 QUALITY_CHOICES = ["ok", "ok", "ok", "blur", "glare", "dark"]

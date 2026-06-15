@@ -15,8 +15,8 @@ DEC_NAME = {PROMOTE: "promote", REVIEW: "review", QUARANTINE: "quarantine"}
 
 PRIORITY = [
     "QUALITY_BLUR", "QUALITY_GLARE", "CALIBRATED_FAIL", "HOLDOUT_FLAGGED",
-    "DUP_TAINT", "HOLDOUT", "HOLDOUT_SIBLING", "DUP_REVIEW", "LOW_CALIBRATED",
-    "CALIBRATED_OK",
+    "HOLDOUT_DUP_FLAGGED", "DUP_TAINT", "HOLDOUT", "HOLDOUT_SIBLING",
+    "HOLDOUT_DUP", "DUP_REVIEW", "LOW_CALIBRATED", "CALIBRATED_OK",
 ]
 PRIO = {r: i for i, r in enumerate(PRIORITY)}
 
@@ -120,19 +120,40 @@ def expected_decisions(db, th):
 
     label, members = _components(frames, th["dup_hamming_max"])
     holdout_patients = {f["patient_id"] for f in frames if f["holdout"]}
+    holdout_frames = {f["frame_id"] for f in frames if f["holdout"]}
+    cal = {f["frame_id"]: bins[str(f["calibration_bin"])] for f in frames}
+
+    # Per-component aggregates (computed after the transitive closure).
+    comp_tainted = {}
+    comp_holdout_exposed = {}
+    comp_rep = {}
+    for root, mem in members.items():
+        comp_tainted[root] = any(m in intrinsic_q for m in mem)
+        comp_holdout_exposed[root] = any(m in holdout_frames for m in mem)
+        best = max(cal[m] for m in mem)
+        comp_rep[root] = min(m for m in mem if cal[m] == best)
 
     results = []
     for f in frames:
         fid = f["frame_id"]
+        root = label[fid]
+        comp = members[root]
         votes = [base(f)]
         if f["quality_flag"] in qflags:
             votes.append((QUARANTINE, "QUALITY_" + f["quality_flag"].upper()))
-        comp = members[label[fid]]
         if len(comp) >= 2:
-            if any(m in intrinsic_q for m in comp):
+            # Rule C / E: tainted cluster -> all quarantine; otherwise every
+            # non-representative member is downgraded to review.
+            if comp_tainted[root]:
                 votes.append((QUARANTINE, "DUP_TAINT"))
-            else:
+            elif fid != comp_rep[root]:
                 votes.append((REVIEW, "DUP_REVIEW"))
+            # Rule F: holdout taint propagates across the duplicate cluster.
+            if comp_holdout_exposed[root]:
+                if f["quality_flag"] != "ok":
+                    votes.append((QUARANTINE, "HOLDOUT_DUP_FLAGGED"))
+                else:
+                    votes.append((REVIEW, "HOLDOUT_DUP"))
         if f["holdout"]:
             votes.append((REVIEW, "HOLDOUT"))
         elif f["patient_id"] in holdout_patients:

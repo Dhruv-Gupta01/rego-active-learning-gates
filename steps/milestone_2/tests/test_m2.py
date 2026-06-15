@@ -61,6 +61,22 @@ def test_clean_promote():
     assert (d["decision"], d["reason_code"]) == ("promote", "CALIBRATED_OK")
 
 
+def test_trap_holdout_through_dup():
+    # T_HDB is clean and its own patient has no holdout, but its duplicate
+    # T_HDA is holdout -> holdout taint must propagate across the dup cluster.
+    d = _decisions()
+    assert (d["T_HDB"]["decision"], d["T_HDB"]["reason_code"]) == ("review", "HOLDOUT_DUP")
+
+
+def test_trap_cluster_representative():
+    # Untainted clique: only the highest-calibrated member is promoted; the
+    # rest are downgraded to review (DUP_REVIEW).
+    d = _decisions()
+    assert (d["T_REPA"]["decision"], d["T_REPA"]["reason_code"]) == ("promote", "CALIBRATED_OK")
+    assert (d["T_REPB"]["decision"], d["T_REPB"]["reason_code"]) == ("review", "DUP_REVIEW")
+    assert (d["T_REPC"]["decision"], d["T_REPC"]["reason_code"]) == ("review", "DUP_REVIEW")
+
+
 def test_hidden_db_decisions():
     th = helpers.thresholds()
     db = helpers.make_hidden_db()

@@ -146,6 +146,20 @@ comp_tainted(fid) if {
     m in intrinsic_quarantine
 }
 
+# a duplicate cluster is holdout-exposed if any member is a holdout frame
+comp_holdout_exposed(fid) if {
+    some m in members(component(fid))
+    frame_by_id[m].holdout
+}
+
+# cluster representative: highest calibrated score, ties broken by smallest id
+comp_max_score(fid) := max([calibrated(m) | some m in members(component(fid))])
+
+comp_rep(fid) := min([m |
+    some m in members(component(fid))
+    calibrated(m) == comp_max_score(fid)
+])
+
 # patients that have at least one holdout frame
 holdout_patients contains pid if {
     some f in input.frames
@@ -177,6 +191,21 @@ votes contains [fid, 1, "DUP_REVIEW"] if {
     some fid in frame_ids
     comp_size(fid) >= 2
     not comp_tainted(fid)
+    fid != comp_rep(fid)
+}
+
+votes contains [fid, 2, "HOLDOUT_DUP_FLAGGED"] if {
+    some fid in frame_ids
+    comp_size(fid) >= 2
+    comp_holdout_exposed(fid)
+    frame_by_id[fid].quality_flag != "ok"
+}
+
+votes contains [fid, 1, "HOLDOUT_DUP"] if {
+    some fid in frame_ids
+    comp_size(fid) >= 2
+    comp_holdout_exposed(fid)
+    frame_by_id[fid].quality_flag == "ok"
 }
 
 votes contains [fid, 1, "HOLDOUT"] if {
@@ -199,8 +228,9 @@ votes contains [fid, 1, "HOLDOUT_SIBLING"] if {
 }
 
 priority := ["QUALITY_BLUR", "QUALITY_GLARE", "CALIBRATED_FAIL",
-             "HOLDOUT_FLAGGED", "DUP_TAINT", "HOLDOUT", "HOLDOUT_SIBLING",
-             "DUP_REVIEW", "LOW_CALIBRATED", "CALIBRATED_OK"]
+             "HOLDOUT_FLAGGED", "HOLDOUT_DUP_FLAGGED", "DUP_TAINT", "HOLDOUT",
+             "HOLDOUT_SIBLING", "HOLDOUT_DUP", "DUP_REVIEW", "LOW_CALIBRATED",
+             "CALIBRATED_OK"]
 
 prio_index(r) := i if {
     some i
