@@ -10,6 +10,11 @@ always injected so the cross-frame difficulty scenarios are guaranteed present.
 The generator shells out to the `duckdb` CLI; it does not require the duckdb
 Python package.
 
+This file is the CANONICAL generator (single source of truth). The verifier
+copies at steps/milestone_*/tests/hidden_gen.py are auto-derived from it (only
+their module docstring differs); edit this file and regenerate them — never
+hand-edit the copies.
+
 Schema (table `frames`):
     frame_id        TEXT     unique id
     patient_id      TEXT     patient grouping key

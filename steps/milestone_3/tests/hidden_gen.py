@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Verifier-only generator for a HIDDEN DuckDB retinal-triage review queue.
 
+AUTO-DERIVED from environment/data/build_queue.py (the single source of truth) —
+do not hand-edit. To change the fixture, edit build_queue.py and regenerate these
+copies; only this module docstring differs from the canonical generator.
+
 This module lives only under tests/ (never mounted into the agent's image). It is
 used by the verifier to build a fresh database with a different seed for the
-anti-cheat re-run. It exposes the same build() contract as the environment's
-build_queue.py but is a separate verifier artifact; it reveals only how input
-rows are generated, not how decisions are computed (that lives in reference.py).
+anti-cheat re-run. It exposes the same build() contract as build_queue.py but is a
+separate verifier artifact; it reveals only how input rows are generated, not how
+decisions are computed (that lives in reference.py).
 
 Schema (table `frames`): frame_id TEXT, patient_id TEXT, raw_confidence DOUBLE,
 calibration_bin INTEGER, quality_flag TEXT, holdout BOOLEAN, dup_hash BIGINT.
