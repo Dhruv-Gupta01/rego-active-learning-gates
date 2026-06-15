@@ -142,13 +142,13 @@ def expected_decisions(db, th):
         if f["quality_flag"] in qflags:
             votes.append((QUARANTINE, "QUALITY_" + f["quality_flag"].upper()))
         if len(comp) >= 2:
-            # Rule C / E: tainted cluster -> all quarantine; otherwise every
+            # Rule C: tainted cluster -> all quarantine; otherwise every
             # non-representative member is downgraded to review.
             if comp_tainted[root]:
                 votes.append((QUARANTINE, "DUP_TAINT"))
             elif fid != comp_rep[root]:
                 votes.append((REVIEW, "DUP_REVIEW"))
-            # Rule F: holdout taint propagates across the duplicate cluster.
+            # Rule E: holdout taint propagates across the duplicate cluster.
             if comp_holdout_exposed[root]:
                 if f["quality_flag"] != "ok":
                     votes.append((QUARANTINE, "HOLDOUT_DUP_FLAGGED"))

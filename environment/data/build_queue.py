@@ -59,7 +59,7 @@ TRAP_FRAMES = [
     ("T_PRS", "P_PR", 0.90, 4, "dark", False, bits(37, 38, 39)),
     # a clean promote so the happy path is exercised.
     ("T_OK", "P_OK", 0.90, 4, "ok", False, bits(44, 45, 46)),
-    # coupled holdout-through-duplicate (Rule F): T_HDB is a clean frame in a
+    # coupled holdout-through-duplicate (Rule E): T_HDB is a clean frame in a
     # holdout-free patient, but its duplicate T_HDA is holdout -> T_HDB downgraded.
     ("T_HDA", "P_HDA", 0.90, 4, "ok", True, bits(51, 52, 53)),
     ("T_HDB", "P_HDB", 0.90, 4, "ok", False, bits(51, 52, 53, 54)),
