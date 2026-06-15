@@ -1,6 +1,7 @@
 """Shared test helpers."""
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -19,14 +20,18 @@ def thresholds():
         return yaml.safe_load(fh)
 
 
-def make_hidden_db(seed=90210, n_random=44):
-    import hidden_gen
+def make_hidden_db():
+    """Return a writable copy of the shipped hidden anti-cheat database.
 
-    path = f"/tmp/hidden_{seed}.db"
-    if os.path.exists(path):
-        os.remove(path)
-    hidden_gen.build(seed, path, n_random)
-    return path
+    The hidden DB (a different seed + frame mix than the image's queue.db,
+    verifier-only and never mounted into the agent's container) is pre-built and
+    committed as tests/hidden.db. We copy it to /tmp so the worker's write-back
+    does not mutate the committed fixture.
+    """
+    src = os.path.join(HERE, "hidden.db")
+    dst = "/tmp/hidden.db"
+    shutil.copy(src, dst)
+    return dst
 
 
 def run_worker(db, outdir):
