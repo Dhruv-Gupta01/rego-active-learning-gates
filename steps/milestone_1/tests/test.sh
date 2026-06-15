@@ -8,8 +8,11 @@ fi
 
 mkdir -p /logs/verifier
 
-pip install --no-index --find-links=/tests/wheels \
-    pytest==8.4.1 pytest-json-ctrf==0.3.5
+# Restore the verifier-only pytest bundle (built into the image at /opt/...tgz)
+# without any test-time package installation or network access.
+mkdir -p /opt/verifier-pytest
+tar -xzf /opt/verifier-pytest.tgz -C /opt/verifier-pytest
+export PYTHONPATH="/opt/verifier-pytest:${PYTHONPATH:-}"
 
 python -m pytest \
     -o cache_dir=/tmp/pytest_cache \
