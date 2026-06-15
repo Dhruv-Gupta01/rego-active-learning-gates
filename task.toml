@@ -1,0 +1,68 @@
+# Task configuration schema version
+version = "2.0"
+
+# Task metadata (author, difficulty, categorization)
+[metadata]
+author_name = "anonymous"
+author_email = "anonymous"
+difficulty = "medium"
+category = "machine-learning"
+# Options for subcategories are: "long_context", "tool_specific", "api_integration", "db_interaction", "ui_building"
+subcategories = ["db_interaction"]
+# Total milestone count — must match the number of [[steps]] blocks below
+number_of_milestones = 3
+# Size of the codebase: minimal -> 0-20 files, small -> 20+ files, large -> 200+ files
+codebase_size = "minimal"
+# Coding languages used in the oracle solution or required by the agent
+languages = ["rego", "sql", "bash"]
+# For tool_specific, api_integration, and db_interaction subcategories, please include specific tool, api framework, or database software
+tags = ["rego", "opa", "duckdb", "sql", "bash", "policy", "active-learning"]
+# Estimated time to complete (minutes)
+expert_time_estimate_min = 90
+junior_time_estimate_min = 180
+
+# Top-level fallbacks for harness versions that expect them (per-step values below override).
+[agent]
+timeout_sec = 900.0
+
+[verifier]
+timeout_sec = 450.0
+
+# Sandbox environment limits — applied across all milestones (the same container is shared)
+[environment]
+allow_internet = false
+build_timeout_sec = 600.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+workdir = "/app"
+
+# Milestone 1
+[[steps]]
+name = "milestone_1"
+
+[steps.agent]
+timeout_sec = 900.0
+
+[steps.verifier]
+timeout_sec = 450.0
+
+# Milestone 2
+[[steps]]
+name = "milestone_2"
+
+[steps.agent]
+timeout_sec = 900.0
+
+[steps.verifier]
+timeout_sec = 450.0
+
+# Milestone 3
+[[steps]]
+name = "milestone_3"
+
+[steps.agent]
+timeout_sec = 900.0
+
+[steps.verifier]
+timeout_sec = 450.0

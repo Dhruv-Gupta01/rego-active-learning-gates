@@ -1,0 +1,27 @@
+# Active-learning gate policy thresholds.
+# Calibrated score for each calibration bin index (0..4). Decisions use the
+# calibrated score, NOT the raw model confidence.
+calibration_bins:
+  "0": 0.10
+  "1": 0.30
+  "2": 0.55
+  "3": 0.68
+  "4": 0.92
+
+# Calibrated-score gates.
+promote_min_calibrated: 0.70   # calibrated >= this  -> promote candidate
+review_min_calibrated: 0.40    # review_min <= calibrated < promote_min -> review
+                               # calibrated < review_min -> quarantine
+
+# Camera-quality flags that force an intrinsic quarantine on their own.
+quality_quarantine_flags:
+  - blur
+  - glare
+
+# Two frames are duplicate-linked when the Hamming distance between their
+# 64-bit perceptual dup-hashes is <= this value.
+dup_hamming_max: 5
+
+# Upper bound on the number of relaxation steps the duplicate-cluster closure
+# may take.
+fixpoint_max_steps: 16
