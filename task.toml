@@ -14,9 +14,9 @@ number_of_milestones = 3
 # Size of the codebase: minimal -> 0-20 files, small -> 20+ files, large -> 200+ files
 codebase_size = "minimal"
 # Coding languages used in the oracle solution or required by the agent
-languages = ["rego", "sql", "bash", "python"]
+languages = ["rego", "sql", "bash"]
 # For tool_specific, api_integration, and db_interaction subcategories, please include specific tool, api framework, or database software
-tags = ["rego", "opa", "duckdb", "sql", "bash", "policy", "active-learning"]
+tags = ["rego", "opa", "duckdb", "policy", "active-learning"]
 # Estimated time to complete (minutes)
 expert_time_estimate_min = 90
 junior_time_estimate_min = 180
