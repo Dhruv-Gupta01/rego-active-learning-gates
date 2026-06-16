@@ -1,5 +1,5 @@
-# Digest-pinned base (python:3.13-slim-bookworm, linux/amd64)
-FROM python@sha256:05b95397cac02b060ff1251afaa78087d92d7034369afbc8eb765631cada8257
+# Digest-pinned canonical base (python:3.13-slim-bookworm via public ECR mirror)
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm@sha256:01f42367a0a94ad4bc17111776fd66e3500c1d87c15bbd6055b7371d39c124fb
 
 # Runtime-only OS deps. Test deps are NOT importable in this image — pytest is
 # shipped as an inert tarball (built below) and extracted at test time, so the
