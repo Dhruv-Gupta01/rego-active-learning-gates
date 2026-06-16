@@ -3,8 +3,9 @@ version = "2.0"
 
 # Task metadata (author, difficulty, categorization)
 [metadata]
-author_name = "anonymous"
-author_email = "anonymous"
+name = "retinal-triage-rego-gates"
+author_name = "Dhruv Gupta"
+author_email = "dhruvgupta9191@gmail.com"
 difficulty = "medium"
 category = "machine-learning"
 # Options for subcategories are: "long_context", "tool_specific", "api_integration", "db_interaction", "ui_building"
